@@ -82,7 +82,7 @@
 // sync hop delay
 #define SYNC_HOP_DELAY_US 1250
 
-static msgQueue_t * rxQ =  QUEUE_ALLOC( 64, PDU_META_OFFSET + 255 + CRC_LEN );
+static msgQueue_t * rxQ =  QUEUE_ALLOC( 36, PDU_META_OFFSET + 255 + CRC_LEN );
 static msgQueue_t * msgQ = QUEUE_ALLOC( 16, PDU_META_OFFSET + 80 );
 
 //#define USE_RTT_OUTPUT
@@ -336,6 +336,8 @@ void RADIO_IRQHandler(void) {
     uint8_t *curBuf = (uint8_t*)NRF_RADIO->PACKETPTR;
     packet_t *p   = (void*)(curBuf - PDU_META_OFFSET);
 
+    LEDS_ON(LEDS_MASK);
+
     /* get meta data from radio */
 
     // check CRC
@@ -406,7 +408,6 @@ void RADIO_IRQHandler(void) {
             ctx.buffer_overrun = 0;
             p->payload.flags |= (1 << 3);
         }
-
     }
 
     // Restart receiver
@@ -573,6 +574,8 @@ void RADIO_IRQHandler(void) {
         default:
             break;
     }
+
+    LEDS_OFF(LEDS_MASK);
 
 #ifdef GPIO_DURING_RADIO
     nrf_gpio_pin_write(GPIO_DURING_RADIO, 0);

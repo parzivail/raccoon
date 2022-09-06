@@ -1,14 +1,14 @@
 export GNU_INSTALL_ROOT ?=
 
 PROJECT_NAME     := uart_btfriend32
-TARGETS          := nrf51822_xxac
+TARGETS          := nrf51822_qfaa
 OUTPUT_DIRECTORY := _build
 
 SDK_ROOT ?= ../../../../nRF5_SDK_15.3.0_59ac345
 PROJ_DIR := ../../..
 
-$(OUTPUT_DIRECTORY)/nrf51822_xxac.out: \
-  LINKER_SCRIPT  := nrf51_xxac.ld
+$(OUTPUT_DIRECTORY)/nrf51822_qfaa.out: \
+  LINKER_SCRIPT  := nrf51_qfaa.ld
 
 # Source files common to all targets
 SRC_FILES += \
@@ -48,7 +48,8 @@ INC_FOLDERS += \
 LIB_FILES += \
 
 # Optimization flags
-OPT = -Os -ggdb3
+OPT = -Os -ggdb
+# OPT = -Os -ggdb3
 #OPT = -Og -ggdb3
 # Uncomment the line below to enable link time optimization
 #OPT += -flto
@@ -71,6 +72,7 @@ CFLAGS += -mno-unaligned-access
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
 CFLAGS += -fno-builtin --short-enums 
+CFLAGS += -Wno-array-bounds
 
 
 # C++ flags common to all targets
@@ -96,12 +98,12 @@ LDFLAGS += --specs=nano.specs -lc -lnosys
 .PHONY: $(TARGETS) default all clean help flash 
 
 # Default target - first one defined
-default: nrf51822_xxac
+default: nrf51822_qfaa
 
 # Print all targets that can be built
 help:
 	@echo following targets are available:
-	@echo 		nrf51822_xxac
+	@echo 		nrf51822_qfaa
 	@echo		nrfx_config - starting external tool for editing nrfx_config.h
 	@echo		flash      - flashing binary
 
@@ -114,7 +116,7 @@ $(foreach target, $(TARGETS), $(call define_target, $(target)))
 .PHONY: flash erase
 
 # Flash the program
-flash: $(OUTPUT_DIRECTORY)/nrf51822_xxac.hex
+flash: $(OUTPUT_DIRECTORY)/nrf51822_qfaa.hex
 	@echo Flashing: $<
 	nrfjprog --program $< -f nrf51 --sectorerase
 	nrfjprog --reset -f nrf51
