@@ -7,14 +7,7 @@ NRF5_SDK_URL      = https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v$(NRF5_S
 
 all: subdirs | $(NRF5_SDK_ROOT)
 
-SUBDIRS = firmware/nrf/blefriend32/armgcc/ \
-		  firmware/nrf/pca10028/armgcc/    \
-		  firmware/nrf/pca10040/armgcc/    \
-		  firmware/nrf/pca10056/armgcc/    \
-		  firmware/nrf/pca10059/armgcc/    \
-		  firmware/nrf/nrf52840_mdk/armgcc/    		\
-		  firmware/nrf/nrf52840_mdk_usb_dongle/armgcc/  \
-		  firmware/nrf/pitaya_go/armgcc/
+SUBDIRS = firmware/nrf/blefriend32/armgcc/
 
 SUBDIRS_CLEAN := $(addsuffix clean,$(SUBDIRS))
 

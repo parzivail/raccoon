@@ -64,7 +64,6 @@
 #include "hopping.h"
 #include "queue.h"
 
-
 // read unaligned 16+24 bit
 #define READ_LE_16(a) ( ((*(((uint8_t*)a)+0))<<0) | ((*(((uint8_t*)a)+1))<<8) )
 #define READ_LE_24(a) ( ((*(((uint8_t*)a)+0))<<0) | ((*(((uint8_t*)a)+1))<<8) | ((*(((uint8_t*)a)+2))<<16))
@@ -280,12 +279,14 @@ static void sync_hop_channel() {
     ctx.acnhor_us += ctx.interval_us;
     ctx.packet_nr_in_connection_event = 0;
 
+    #ifndef SNIFFER_NO_TIMEOUT
     if (ctx.time_without_any_packets_us > ctx.timeout_us) {
         printf("Timeout\n");
         insert_terminate_message(1);
         abort_following();
         return;
     }
+    #endif // SNIFFER_NO_TIMEOUT
 
     if (ctx.channel_map_update_pending && (ctx.channel_map_update_instant == ctx.connection_event)) {
         insert_channel_map_update_message( (const uint8_t *) &ctx.channel_map_update_map);
@@ -356,11 +357,14 @@ void RADIO_IRQHandler(void) {
     int queue_packet = 1;
     int ignore_adv   = 0;
 
+    
+    #ifndef SNIFFER_IGNORE_RSSI
     // ignore advertisements and connection requests with low rssi
     if (ctx.mode == FOLLOW_CONNECT && rssi_negative > ctx.rssi_min_negative){
         queue_packet = 0;
         ignore_adv   = 1;
     }
+    #endif // SNIFFER_IGNORE_RSSI
 
     // check if packet can be queued
     if (queue_packet && queue_full( rxQ )) {
@@ -418,6 +422,7 @@ void RADIO_IRQHandler(void) {
 
     bool update_timer = false;
 
+    #ifndef SNIFFER_NO_FOLLOW
     switch( ctx.mode ) {
         case FOLLOW_CONNECT:
             // don't process control packets if CRC invalid or RSSI filter
@@ -574,6 +579,7 @@ void RADIO_IRQHandler(void) {
         default:
             break;
     }
+    #endif // SNIFFER_NO_FOLLOW
 
     LEDS_OFF(LEDS_MASK);
 
@@ -685,6 +691,8 @@ int main(void) {
                 case TAG_CMD_RESET:
                     // stop sniffing
                     abort_following();
+
+                    LEDS_ON(LEDS_MASK);
 
                     // reset time
                     NRF_TIMER0->TASKS_CLEAR = UINT32_C(1);
