@@ -34,7 +34,7 @@ extern "C" {
 #define TX_PIN_NUMBER  15
 #define CTS_PIN_NUMBER 12
 #define RTS_PIN_NUMBER 11
-#define HWFC           true
+#define HWFC           false
 
 #define SER_CON_RX_PIN              16
 #define SER_CON_TX_PIN              15

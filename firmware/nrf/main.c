@@ -160,6 +160,71 @@ struct {
 hopping_t h;
 uint16_t hop;
 
+#define BYTE_START 0x7F
+#define BYTE_ESC 0x7E
+#define BYTE_END 0x7D
+#define BYTE_XOR 0x20
+#define BYTE_SEED 0xAA
+static uint8_t serial_buffer[2] = {0};
+
+nrfx_err_t frame_byte_write(uint8_t data)
+{
+    nrfx_err_t err;
+
+    if (data == BYTE_START || data == BYTE_ESC || data == BYTE_END)
+    {
+        serial_buffer[0] = BYTE_ESC;
+        serial_buffer[1] = data ^ BYTE_XOR;
+        err = transport_write((void*)serial_buffer, 2);
+        if (err != NRFX_SUCCESS)
+            return err;
+    }
+    else
+    {
+        serial_buffer[0] = data;
+        err = transport_write((void*)serial_buffer, 1);
+        if (err != NRFX_SUCCESS)
+            return err;
+    }
+
+    return NRFX_SUCCESS;
+}
+
+nrfx_err_t frame_transport_write(uint8_t *buf, size_t l)
+{
+    // Don't write frames that are excessively large
+    if (l >= 65536)
+        return NRFX_SUCCESS;
+
+    nrfx_err_t err;
+    uint8_t checksum = BYTE_SEED;
+
+    serial_buffer[0] = BYTE_START;
+    transport_write((void*)serial_buffer, 1);
+    
+    for (size_t i = 0; i < l; i++)
+    {
+        uint8_t data = buf[i];
+
+        checksum ^= data;
+
+        err = frame_byte_write(data);
+        if (err != NRFX_SUCCESS)
+            return err;
+    }
+
+    err = frame_byte_write(checksum);
+    if (err != NRFX_SUCCESS)
+        return err;
+
+    serial_buffer[0] = BYTE_END;
+    err = transport_write((void*)serial_buffer, 1);
+    if (err != NRFX_SUCCESS)
+        return err;
+
+    return NRFX_SUCCESS;
+}
+
 void printf_hexdump( void *buf, size_t l ) {
 #ifdef DEBUG
     uint8_t *d = buf;
@@ -601,7 +666,7 @@ void test_tx(void) {
         static uint32_t i=0;
         printf("0x%08x\n", i++);
 #endif
-        transport_write((uint8_t*)packet, packet->length + 3);
+        frame_transport_write((uint8_t*)packet, packet->length + 3);
     }
 }
 
@@ -704,14 +769,14 @@ int main(void) {
                     break;
                 case TAG_CMD_GET_VERSION: {
                     uint8_t t = TAG_CMD_GET_VERSION;
-                    ret = transport_write(&t, sizeof(t) );
+                    ret = frame_transport_write(&t, sizeof(t) );
                     assert( ret == NRFX_SUCCESS );
 
                     const char *v = VERSION;
                     uint16_t l = strlen(v);
-                    ret = transport_write((uint8_t*)&l, sizeof(l) );
+                    ret = frame_transport_write((uint8_t*)&l, sizeof(l) );
                     assert( ret == NRFX_SUCCESS );
-                    ret = transport_write((uint8_t*)v, l );
+                    ret = frame_transport_write((uint8_t*)v, l );
                     assert( ret == NRFX_SUCCESS );
                     printf("TAG_CMD_GET_VERSION\n");
                     break;
@@ -790,7 +855,7 @@ int main(void) {
             }
 
 #else
-            transport_write((void*)packet, packet->length + 3);
+            frame_transport_write((uint8_t*)packet, packet->length + 3);
 #endif
             queue_get( queue );
         }
